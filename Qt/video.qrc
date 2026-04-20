@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="cct">
+    <file>camara-de-video.png</file>
+  </qresource>
+</RCC>

@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="cct">
+    <file>menu.png</file>
+  </qresource>
+</RCC>
