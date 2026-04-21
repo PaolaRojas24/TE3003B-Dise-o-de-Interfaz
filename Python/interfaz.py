@@ -220,7 +220,7 @@ class Ui_MainWindow(object):
         self.label_4.setFont(font)
         self.label_4.setObjectName("label_4")
         self.frame_5 = QtWidgets.QFrame(parent=self.p_trazo)
-        self.frame_5.setGeometry(QtCore.QRect(90, 140, 391, 331))
+        self.frame_5.setGeometry(QtCore.QRect(90, 100, 391, 201))
         self.frame_5.setMinimumSize(QtCore.QSize(60, 60))
         self.frame_5.setStyleSheet("QFrame{\n"
 "    gridline-color: rgba(255, 255, 255, 0);\n"
@@ -236,28 +236,28 @@ class Ui_MainWindow(object):
         self.frame_5.setObjectName("frame_5")
         # --- Botones de trazo ---
         self.bt_iniciar_trazo = QtWidgets.QPushButton(parent=self.p_trazo)
-        self.bt_iniciar_trazo.setGeometry(QtCore.QRect(90, 440, 180, 41))
+        self.bt_iniciar_trazo.setGeometry(QtCore.QRect(90, 350, 180, 41))
         self.bt_iniciar_trazo.setFont(font)
         self.bt_iniciar_trazo.setStyleSheet("color: rgb(255, 255, 255);\nbackground-color: rgb(214, 99, 138);\nborder-radius: 10px;")
         self.bt_iniciar_trazo.setEnabled(False)
         self.bt_iniciar_trazo.setObjectName("bt_iniciar_trazo")
 
         self.bt_bajar_trazo = QtWidgets.QPushButton(parent=self.p_trazo)
-        self.bt_bajar_trazo.setGeometry(QtCore.QRect(90, 485, 180, 41))
+        self.bt_bajar_trazo.setGeometry(QtCore.QRect(90, 420, 180, 41))
         self.bt_bajar_trazo.setFont(font)
         self.bt_bajar_trazo.setStyleSheet("color: rgb(214, 99, 138);\nbackground-color: rgb(244, 197, 215);\nborder-radius: 10px;")
         self.bt_bajar_trazo.setEnabled(False)
         self.bt_bajar_trazo.setObjectName("bt_bajar_trazo")
 
         self.bt_confirmar_trazo = QtWidgets.QPushButton(parent=self.p_trazo)
-        self.bt_confirmar_trazo.setGeometry(QtCore.QRect(90, 530, 180, 41))
+        self.bt_confirmar_trazo.setGeometry(QtCore.QRect(90, 490, 180, 41))
         self.bt_confirmar_trazo.setFont(font)
         self.bt_confirmar_trazo.setStyleSheet("color: rgb(255, 255, 255);\nbackground-color: rgb(214, 99, 138);\nborder-radius: 10px;")
         self.bt_confirmar_trazo.setEnabled(False)
         self.bt_confirmar_trazo.setObjectName("bt_confirmar_trazo")
 
         self.lbl_trazo = QtWidgets.QLabel(parent=self.p_trazo)
-        self.lbl_trazo.setGeometry(QtCore.QRect(90, 395, 391, 31))
+        self.lbl_trazo.setGeometry(QtCore.QRect(90, 270, 391, 31))
         self.lbl_trazo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.lbl_trazo.setObjectName("lbl_trazo")
 
