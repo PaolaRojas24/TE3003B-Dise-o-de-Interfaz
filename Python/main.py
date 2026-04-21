@@ -1,10 +1,17 @@
 # main.py
-import sys
 import os
+os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""  # <-- esta línea primero
+os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "0"
+
+import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
+
+from PyQt5 import QtGui, QtCore
 from interfaz import Ui_MainWindow
-from dibujo import HiloDibujo
+
 from control import HiloControl, DELTA
+from dibujo import HiloDibujo
+from camara import HiloCamara
 
 class MainApp(QMainWindow):
     def __init__(self):
@@ -17,6 +24,8 @@ class MainApp(QMainWindow):
         self.hilo_ctrl = HiloControl()
         self.hilo_ctrl.error.connect(self.control_error)
         self.hilo_ctrl.start()
+
+        self.hilo_cam = None
 
         # ── Navegación del menú ──────────────────────────────────────
         self.ui.bt_control.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.p_control))
@@ -39,14 +48,15 @@ class MainApp(QMainWindow):
         self.ui.bt_bajar.clicked.connect(self.bajar_lapiz)
         self.ui.bt_confirmar.clicked.connect(self.confirmar_altura)
 
+        # Activar/desactivar cámara al cambiar de página
+        self.ui.bt_camara.clicked.connect(self.iniciar_camara)
+        self.ui.bt_control.clicked.connect(self.detener_camara)
+        self.ui.bt_dIbujo.clicked.connect(self.detener_camara)
+        self.ui.bt_trazo.clicked.connect(self.detener_camara)
+
 
     def control_error(self, msg):
         QMessageBox.critical(self, "Error de control", f"Ocurrió un error:\n{msg}")
-
-    def closeEvent(self, event):
-        self.hilo_ctrl.detener()
-        self.hilo_ctrl.wait()
-        event.accept()
 
     # ── Cargar archivo .gnc ──────────────────────────────────────────
     def cargar_archivo(self):
@@ -102,6 +112,38 @@ class MainApp(QMainWindow):
         self.ui.bt_cargar.setEnabled(True)
         self.ui.bt_iniciar.setEnabled(True)
         QMessageBox.critical(self, "Error del robot", f"Ocurrió un error:\n{msg}")
+    
+    # ── Cámara ───────────────────────────────────────────────────────────
+    def iniciar_camara(self):
+        self.ui.stackedWidget.setCurrentWidget(self.ui.p_camara)
+        if self.hilo_cam is None or not self.hilo_cam.isRunning():
+            self.hilo_cam = HiloCamara()
+            self.hilo_cam.frame_listo.connect(self.actualizar_frame)
+            self.hilo_cam.error.connect(self.camara_error)
+            self.hilo_cam.start()
+
+    def detener_camara(self):
+        if self.hilo_cam and self.hilo_cam.isRunning():
+            self.hilo_cam.detener()
+            self.hilo_cam.wait()
+            self.hilo_cam = None
+
+    def actualizar_frame(self, imagen):
+        pixmap = QtGui.QPixmap.fromImage(imagen)
+        self.ui.lbl_camara.setPixmap(
+            pixmap.scaled(self.ui.lbl_camara.size(),
+                        QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                        QtCore.Qt.TransformationMode.SmoothTransformation)
+        )
+
+    def camara_error(self, msg):
+        self.ui.lbl_camara.setText(f"❌ {msg}")
+    
+    def closeEvent(self, event):
+        self.detener_camara()
+        self.hilo_ctrl.detener()
+        self.hilo_ctrl.wait()
+        event.accept()
 
 
 if __name__ == "__main__":

@@ -152,6 +152,14 @@ class Ui_MainWindow(object):
         self.label_2.setStyleSheet("border-image: url(../Qt/camara-de-video.png);")
         self.label_2.setText("")
         self.label_2.setObjectName("label_2")
+        # --- Display de la cámara ---
+        self.lbl_camara = QtWidgets.QLabel(parent=self.p_camara)
+        self.lbl_camara.setGeometry(QtCore.QRect(10, 10, 571, 460))
+        self.lbl_camara.setStyleSheet("background-color: rgb(0, 0, 0);")
+        self.lbl_camara.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.lbl_camara.setText("Sin señal")
+        self.lbl_camara.setObjectName("lbl_camara")
+        
         self.stackedWidget.addWidget(self.p_camara)
         self.p_dibujo = QtWidgets.QWidget()
         self.p_dibujo.setObjectName("p_dibujo")
