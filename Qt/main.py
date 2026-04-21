@@ -3,11 +3,8 @@ import sys
 import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
 from interfaz import Ui_MainWindow
-
-sys.path.append(os.path.join(os.path.dirname(__file__),
-                '../xArm-Python-SDK/example/wrapper/common'))
 from dibujo import HiloDibujo
-
+from control import HiloControl, DELTA
 
 class MainApp(QMainWindow):
     def __init__(self):
@@ -17,6 +14,9 @@ class MainApp(QMainWindow):
 
         self.ruta_gnc = None
         self.hilo     = None
+        self.hilo_ctrl = HiloControl()
+        self.hilo_ctrl.error.connect(self.control_error)
+        self.hilo_ctrl.start()
 
         # ── Navegación del menú ──────────────────────────────────────
         self.ui.bt_control.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.p_control))
@@ -24,11 +24,29 @@ class MainApp(QMainWindow):
         self.ui.bt_dIbujo.clicked.connect( lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.p_dibujo))
         self.ui.bt_trazo.clicked.connect(  lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.p_trazo))
 
+        # ── Botones de control direccional ───────────────────────────
+        self.ui.pushButton.clicked.connect(  lambda: self.hilo_ctrl.mover("x", -DELTA))
+        self.ui.pushButton_2.clicked.connect(lambda: self.hilo_ctrl.mover("x", +DELTA))
+        self.ui.pushButton_4.clicked.connect(lambda: self.hilo_ctrl.mover("y", -DELTA))
+        self.ui.pushButton_3.clicked.connect(lambda: self.hilo_ctrl.mover("y", +DELTA))
+        self.ui.pushButton_5.clicked.connect(lambda: self.hilo_ctrl.mover("z", +DELTA))
+        self.ui.pushButton_6.clicked.connect(lambda: self.hilo_ctrl.mover("z", -DELTA))
+        self.ui.pushButton_7.clicked.connect(self.hilo_ctrl.ir_a_home)
+
         # ── Página Dibujo ────────────────────────────────────────────
         self.ui.bt_cargar.clicked.connect(self.cargar_archivo)
         self.ui.bt_iniciar.clicked.connect(self.conectar_robot)
         self.ui.bt_bajar.clicked.connect(self.bajar_lapiz)
         self.ui.bt_confirmar.clicked.connect(self.confirmar_altura)
+
+
+    def control_error(self, msg):
+        QMessageBox.critical(self, "Error de control", f"Ocurrió un error:\n{msg}")
+
+    def closeEvent(self, event):
+        self.hilo_ctrl.detener()
+        self.hilo_ctrl.wait()
+        event.accept()
 
     # ── Cargar archivo .gnc ──────────────────────────────────────────
     def cargar_archivo(self):
