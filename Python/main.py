@@ -1,6 +1,6 @@
 # main.py
 import os
-os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""  # <-- esta línea primero
+os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""
 os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "0"
 
 import sys
@@ -10,6 +10,7 @@ from PyQt5 import QtGui, QtCore
 from interfaz import Ui_MainWindow
 
 from control import HiloControl, DELTA
+from trazo import HiloTrazo
 from dibujo import HiloDibujo
 from camara import HiloCamara
 
@@ -19,11 +20,15 @@ class MainApp(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.ruta_gnc = None
         self.hilo     = None
         self.hilo_ctrl = HiloControl()
         self.hilo_ctrl.error.connect(self.control_error)
         self.hilo_ctrl.start()
+
+        self.hilo_trazo  = None
+        self.figura_sel  = None
+
+        self.ruta_gnc = None
 
         self.hilo_cam = None
 
@@ -42,6 +47,16 @@ class MainApp(QMainWindow):
         self.ui.pushButton_6.clicked.connect(lambda: self.hilo_ctrl.mover("z", -DELTA))
         self.ui.pushButton_7.clicked.connect(self.hilo_ctrl.ir_a_home)
 
+        # Botones de figura
+        self.ui.pushButton_8.clicked.connect(lambda: self.seleccionar_figura("cuadrado"))
+        self.ui.pushButton_9.clicked.connect(lambda: self.seleccionar_figura("triangulo"))
+        self.ui.pushButton_10.clicked.connect(lambda: self.seleccionar_figura("circulo"))
+
+        # Botones de trazo
+        self.ui.bt_iniciar_trazo.clicked.connect(self.conectar_robot_trazo)
+        self.ui.bt_bajar_trazo.clicked.connect(self.bajar_lapiz_trazo)
+        self.ui.bt_confirmar_trazo.clicked.connect(self.confirmar_trazo)
+
         # ── Página Dibujo ────────────────────────────────────────────
         self.ui.bt_cargar.clicked.connect(self.cargar_archivo)
         self.ui.bt_iniciar.clicked.connect(self.conectar_robot)
@@ -57,6 +72,57 @@ class MainApp(QMainWindow):
 
     def control_error(self, msg):
         QMessageBox.critical(self, "Error de control", f"Ocurrió un error:\n{msg}")
+
+    
+    # ── Trazo ─────────────────────────────────────────────────────────────
+    def seleccionar_figura(self, figura):
+        self.figura_sel = figura
+        self.ui.lbl_trazo.setText(f"✔ {figura.capitalize()} seleccionado")
+        self.ui.bt_iniciar_trazo.setEnabled(True)
+
+    def conectar_robot_trazo(self):
+        self.ui.bt_iniciar_trazo.setEnabled(False)
+        self.ui.pushButton_8.setEnabled(False)
+        self.ui.pushButton_9.setEnabled(False)
+        self.ui.pushButton_10.setEnabled(False)
+        self.ui.lbl_trazo.setText("⏳ Conectando robot...")
+
+        self.hilo_trazo = HiloTrazo(self.figura_sel)
+        self.hilo_trazo.listo_para_bajar.connect(self.mostrar_controles_trazo)
+        self.hilo_trazo.terminado.connect(self.trazo_terminado)
+        self.hilo_trazo.error.connect(self.trazo_error)
+        self.hilo_trazo.start()
+
+    def mostrar_controles_trazo(self):
+        self.ui.bt_bajar_trazo.setEnabled(True)
+        self.ui.bt_confirmar_trazo.setEnabled(True)
+        self.ui.lbl_trazo.setText("⬇ Ajusta la altura del lápiz")
+
+    def bajar_lapiz_trazo(self):
+        if self.hilo_trazo:
+            self.hilo_trazo.bajar_un_mm()
+
+    def confirmar_trazo(self):
+        if self.hilo_trazo:
+            self.ui.bt_bajar_trazo.setEnabled(False)
+            self.ui.bt_confirmar_trazo.setEnabled(False)
+            self.ui.lbl_trazo.setText("⏳ Trazando figura...")
+            self.hilo_trazo.confirmar_inicio()
+
+    def trazo_terminado(self):
+        self.ui.lbl_trazo.setText("✅ ¡Figura completada!")
+        self.ui.pushButton_8.setEnabled(True)
+        self.ui.pushButton_9.setEnabled(True)
+        self.ui.pushButton_10.setEnabled(True)
+        self.ui.bt_iniciar_trazo.setEnabled(True)
+
+    def trazo_error(self, msg):
+        self.ui.lbl_trazo.setText("❌ Error")
+        self.ui.pushButton_8.setEnabled(True)
+        self.ui.pushButton_9.setEnabled(True)
+        self.ui.pushButton_10.setEnabled(True)
+        self.ui.bt_iniciar_trazo.setEnabled(True)
+        QMessageBox.critical(self, "Error de trazo", f"Ocurrió un error:\n{msg}")
 
     # ── Cargar archivo .gnc ──────────────────────────────────────────
     def cargar_archivo(self):

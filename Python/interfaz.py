@@ -159,7 +159,7 @@ class Ui_MainWindow(object):
         self.lbl_camara.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.lbl_camara.setText("Sin señal")
         self.lbl_camara.setObjectName("lbl_camara")
-        
+
         self.stackedWidget.addWidget(self.p_camara)
         self.p_dibujo = QtWidgets.QWidget()
         self.p_dibujo.setObjectName("p_dibujo")
@@ -234,6 +234,33 @@ class Ui_MainWindow(object):
         self.frame_5.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.frame_5.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
         self.frame_5.setObjectName("frame_5")
+        # --- Botones de trazo ---
+        self.bt_iniciar_trazo = QtWidgets.QPushButton(parent=self.p_trazo)
+        self.bt_iniciar_trazo.setGeometry(QtCore.QRect(90, 440, 180, 41))
+        self.bt_iniciar_trazo.setFont(font)
+        self.bt_iniciar_trazo.setStyleSheet("color: rgb(255, 255, 255);\nbackground-color: rgb(214, 99, 138);\nborder-radius: 10px;")
+        self.bt_iniciar_trazo.setEnabled(False)
+        self.bt_iniciar_trazo.setObjectName("bt_iniciar_trazo")
+
+        self.bt_bajar_trazo = QtWidgets.QPushButton(parent=self.p_trazo)
+        self.bt_bajar_trazo.setGeometry(QtCore.QRect(90, 485, 180, 41))
+        self.bt_bajar_trazo.setFont(font)
+        self.bt_bajar_trazo.setStyleSheet("color: rgb(214, 99, 138);\nbackground-color: rgb(244, 197, 215);\nborder-radius: 10px;")
+        self.bt_bajar_trazo.setEnabled(False)
+        self.bt_bajar_trazo.setObjectName("bt_bajar_trazo")
+
+        self.bt_confirmar_trazo = QtWidgets.QPushButton(parent=self.p_trazo)
+        self.bt_confirmar_trazo.setGeometry(QtCore.QRect(90, 530, 180, 41))
+        self.bt_confirmar_trazo.setFont(font)
+        self.bt_confirmar_trazo.setStyleSheet("color: rgb(255, 255, 255);\nbackground-color: rgb(214, 99, 138);\nborder-radius: 10px;")
+        self.bt_confirmar_trazo.setEnabled(False)
+        self.bt_confirmar_trazo.setObjectName("bt_confirmar_trazo")
+
+        self.lbl_trazo = QtWidgets.QLabel(parent=self.p_trazo)
+        self.lbl_trazo.setGeometry(QtCore.QRect(90, 395, 391, 31))
+        self.lbl_trazo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.lbl_trazo.setObjectName("lbl_trazo")
+
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame_5)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.pushButton_8 = QtWidgets.QPushButton(parent=self.frame_5)
@@ -745,6 +772,10 @@ class Ui_MainWindow(object):
         self.bt_cargar.setText(_translate("MainWindow", "📂 Cargar gnc"))
         self.lbl_archivo.setText(_translate("MainWindow", "Ningún archivo cargado"))
         self.bt_iniciar.setText(_translate("MainWindow", "🤖 Conectar robot"))
+        self.bt_iniciar_trazo.setText(_translate("MainWindow", "🤖 Conectar robot"))
+        self.bt_bajar_trazo.setText(_translate("MainWindow", "⬇ Bajar lápiz"))
+        self.bt_confirmar_trazo.setText(_translate("MainWindow", "▶ Confirmar y trazar"))
+        self.lbl_trazo.setText(_translate("MainWindow", "Selecciona una figura"))
 
 
 if __name__ == "__main__":
