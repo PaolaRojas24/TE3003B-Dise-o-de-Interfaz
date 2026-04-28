@@ -1,3 +1,10 @@
+"""
+import cv2, glob
+fotos = glob.glob('./chess/*.jpg')
+print(fotos)  # primero verifica que las encuentra
+img = cv2.imread(fotos[0])
+print(img.shape)
+"""
 import cv2 as cv
 import numpy as np
 import glob
@@ -6,7 +13,8 @@ import yaml
 # ── Configuración ─────────────────────────────────────────────
 ChessGrid  = (6, 4)       # esquinas internas = cuadros - 1
 TAM_CUADRO = 40.0         # mm (4 cm)
-framesize  = (640, 480)
+framesize  = (1280, 720)
+
 CARPETA    = './chess/*.jpg'
 ARCHIVO    = 'NuevaCalibracion.yaml'
 # ──────────────────────────────────────────────────────────────

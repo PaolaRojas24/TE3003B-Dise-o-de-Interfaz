@@ -14,19 +14,25 @@ mvacc     = 200
 z_trabajo = 150  # mm — altura final sobre la pieza
 
 # Intrínsecos reales de la calibración
-fx, fy         = 6123.93, 10448.14
-cx_img, cy_img = 311.24, 247.44
-z_cam          = 600.0  # distancia cámara → plano de trabajo (mm)
+fx, fy         = 1078.65, 1077.06
+cx_img, cy_img = 626.20, 253.81
+h_cam          = 300.0  # distancia cámara → plano de trabajo (mm)
+cy_horiz       = -392.4 # cy del horizonte (calculado con tilt=31°)
 
 # Distorsión (de tu calibración)
-dist = np.array([[ 3.73238474e+00,  2.02870981e+02, -3.27829439e-02,
-                  -4.39898406e-01, -6.92957460e+03]])
+dist = np.array([[ 7.31329515e-02,  8.23424300e-01, -1.44209467e-02,
+                  -2.29809355e-03, -3.89945277e+00]])
 
-# Transformación cámara fija → base robot (ajusta t a tu setup)
-R = np.array([[ 0, -1,  0],
-              [-1,  0,  0],
-              [ 0,  0, -1]], dtype=float)
-t = np.array([800.0, 0.0, 500.0])
+# Transformación cámara fija → base robot
+# Confirmado con setup físico:
+#   +Xc (derecha imagen) → +Y robot
+#   +Yc (abajo imagen)   → -Z robot
+#   +Zc (profundidad)    → -X robot
+R = np.array([[ 0,  0, -1],   # X_robot = -Zc
+              [ 1,  0,  0],   # Y_robot = +Xc
+              [ 0, -1,  0],   # Z_robot = -Yc
+              ], dtype=float)
+t = np.array([460.0 +132, 320.0-161, 250.0])  # mm: posición cámara en base robot
 
 T_BASE_CAM = np.eye(4)
 T_BASE_CAM[:3, :3] = R
@@ -74,18 +80,13 @@ def detectar_figura(frame):
 
 
 def pixel_a_robot(px, py):
-    # Corregir distorsión antes de proyectar
-    punto = np.array([[[px, py]]], dtype=np.float32)
-    K = np.array([[fx, 0, cx_img],
-                  [0, fy, cy_img],
-                  [0,  0,      1]], dtype=float)
-    punto_corr = cv2.undistortPoints(punto, K, dist, P=K)[0][0]
+    if py <= cy_horiz:
+        py = cy_horiz + 1
 
-    P = T_BASE_CAM @ np.array([
-        (punto_corr[0] - cx_img) * z_cam / fx,
-        (punto_corr[1] - cy_img) * z_cam / fy,
-        z_cam, 1.0
-    ])
+    z_cam = h_cam * fy /(py - cy_horiz)
+    Xc = (px - cx_img) * z_cam / fx
+    Yc = (py - cy_img) * z_cam / fy
+    P  = T_BASE_CAM @ np.array([Xc, Yc, z_cam, 1.0])
     return P[:3]
 
 
@@ -105,7 +106,7 @@ while True:
         print("Sin señal de cámara")
         break
 
-    frame = cv2.flip(frame, 1)
+    #frame = cv2.flip(frame, 1)
     det   = detectar_figura(frame)
 
     if det:
@@ -124,13 +125,21 @@ while True:
 
     if key == ord('s') and det:
         pos = pixel_a_robot(det["cx"], det["cy"])
-        _, current = arm.get_position()
-        _, _, _, roll, pitch, yaw = current
-        print(f"Moviendo a {det['figura']}: x={pos[0]:.1f}, y={pos[1]:.1f}, z={z_trabajo}")
-        arm.set_position(x=pos[0], y=pos[1], z=z_trabajo,   # ← fix: typo "positioin"
-                         roll=roll, pitch=pitch, yaw=yaw,
-                         speed=speed, mvacc=mvacc, wait=True)
-        print("Listo.")
+        code, current = arm.get_position()
+        x_act, y_act, z_act, roll, pitch, yaw = current
+        print(f"\n--- DEBUG ---")
+        print(f"  Figura       : {det['figura']}")
+        print(f"  Pixel        : cx={det['cx']}  cy={det['cy']}")
+        print(f"  Pos actual   : x={x_act:.1f}  y={y_act:.1f}  z={z_act:.1f}")
+        print(f"  Pos calculada: x={pos[0]:.1f}  y={pos[1]:.1f}  z={pos[2]:.1f}")
+        print(f"  Moverá z a   : {z_trabajo}")
+        print(f"-------------")
+        confirm = input("¿Mover? (s/n): ").strip().lower()
+        if confirm == 's':
+            arm.set_position(x=pos[0], y=pos[1], z=z_trabajo,
+                             roll=roll, pitch=pitch, yaw=yaw,
+                             speed=speed, mvacc=mvacc, wait=True)
+            print("Listo.")
 
     elif key == ord('q'):
         break
