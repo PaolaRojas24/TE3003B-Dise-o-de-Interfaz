@@ -12,7 +12,7 @@ from interfaz import Ui_MainWindow
 from control import HiloControl, DELTA
 from trazo import HiloTrazo
 from dibujo import HiloDibujo
-from camara import HiloCamara
+from camara import HiloCamara, HiloSecuencia
 
 class MainApp(QMainWindow):
     def __init__(self):
@@ -31,10 +31,12 @@ class MainApp(QMainWindow):
         self.ruta_gnc = None
 
         self.hilo_cam = None
+        self.hilo_seq = None
 
         # ── Navegación del menú ──────────────────────────────────────
         self.ui.bt_control.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.p_control))
-        self.ui.bt_camara.clicked.connect( lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.p_camara))
+        self.ui.bt_camara.clicked.connect(self.iniciar_camara)
+        self.ui.bt_secuencia.clicked.connect(self.iniciar_secuencia)
         self.ui.bt_dIbujo.clicked.connect( lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.p_dibujo))
         self.ui.bt_trazo.clicked.connect(  lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.p_trazo))
 
@@ -179,7 +181,7 @@ class MainApp(QMainWindow):
         self.ui.bt_iniciar.setEnabled(True)
         QMessageBox.critical(self, "Error del robot", f"Ocurrió un error:\n{msg}")
     
-    # ── Cámara ───────────────────────────────────────────────────────────
+# ── Cámara ───────────────────────────────────────────────────────────
     def iniciar_camara(self):
         self.ui.stackedWidget.setCurrentWidget(self.ui.p_camara)
         if self.hilo_cam is None or not self.hilo_cam.isRunning():
@@ -193,6 +195,28 @@ class MainApp(QMainWindow):
             self.hilo_cam.detener()
             self.hilo_cam.wait()
             self.hilo_cam = None
+        if self.hilo_seq and self.hilo_seq.isRunning():
+            self.hilo_seq.detener()
+            self.hilo_seq.wait()
+            self.hilo_seq = None
+
+    def iniciar_secuencia(self):
+        # Detener el feed simple y arrancar el hilo de secuencia
+        self.detener_camara()
+        self.ui.bt_secuencia.setEnabled(False)
+        self.ui.lbl_estado_cam.setText("⏳ Iniciando secuencia...")
+
+        self.hilo_seq = HiloSecuencia()
+        self.hilo_seq.frame_listo.connect(self.actualizar_frame)
+        self.hilo_seq.estado_actualizado.connect(self.ui.lbl_estado_cam.setText)
+        self.hilo_seq.terminado.connect(self.secuencia_terminada)
+        self.hilo_seq.error.connect(self.camara_error)
+        self.hilo_seq.start()
+
+    def secuencia_terminada(self):
+        self.ui.bt_secuencia.setEnabled(True)
+        # Reanudar feed normal
+        self.iniciar_camara()
 
     def actualizar_frame(self, imagen):
         pixmap = QtGui.QPixmap.fromImage(imagen)
@@ -204,6 +228,7 @@ class MainApp(QMainWindow):
 
     def camara_error(self, msg):
         self.ui.lbl_camara.setText(f"❌ {msg}")
+        self.ui.bt_secuencia.setEnabled(True)
     
     def closeEvent(self, event):
         self.detener_camara()

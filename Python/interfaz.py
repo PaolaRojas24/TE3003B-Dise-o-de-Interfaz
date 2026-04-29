@@ -154,11 +154,29 @@ class Ui_MainWindow(object):
         self.label_2.setObjectName("label_2")
         # --- Display de la cámara ---
         self.lbl_camara = QtWidgets.QLabel(parent=self.p_camara)
-        self.lbl_camara.setGeometry(QtCore.QRect(10, 10, 571, 460))
+        self.lbl_camara.setGeometry(QtCore.QRect(10, 10, 571, 321))
         self.lbl_camara.setStyleSheet("background-color: rgb(0, 0, 0);")
         self.lbl_camara.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.lbl_camara.setText("Sin señal")
         self.lbl_camara.setObjectName("lbl_camara")
+
+        # --- Etiqueta de estado de la secuencia ---
+        self.lbl_estado_cam = QtWidgets.QLabel(parent=self.p_camara)
+        self.lbl_estado_cam.setGeometry(QtCore.QRect(10, 400, 400, 31))
+        self.lbl_estado_cam.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.lbl_estado_cam.setObjectName("lbl_estado_cam")
+
+        # --- Botón iniciar secuencia ---
+        self.bt_secuencia = QtWidgets.QPushButton(parent=self.p_camara)
+        self.bt_secuencia.setGeometry(QtCore.QRect(420, 400, 151, 41))
+        font_cam = QtGui.QFont()
+        font_cam.setFamily("Z003")
+        font_cam.setPointSize(14)
+        font_cam.setBold(True)
+        self.bt_secuencia.setFont(font_cam)
+        self.bt_secuencia.setStyleSheet(
+        "color: rgb(255, 255, 255);\nbackground-color: rgb(214, 99, 138);\nborder-radius: 10px;")
+        self.bt_secuencia.setObjectName("bt_secuencia")
 
         self.stackedWidget.addWidget(self.p_camara)
         self.p_dibujo = QtWidgets.QWidget()
@@ -776,6 +794,8 @@ class Ui_MainWindow(object):
         self.bt_bajar_trazo.setText(_translate("MainWindow", "⬇ Bajar lápiz"))
         self.bt_confirmar_trazo.setText(_translate("MainWindow", "▶ Confirmar y trazar"))
         self.lbl_trazo.setText(_translate("MainWindow", "Selecciona una figura"))
+        self.lbl_estado_cam.setText(_translate("MainWindow", "Presiona el botón para iniciar"))
+        self.bt_secuencia.setText(_translate("MainWindow", "▶ Iniciar secuencia"))
 
 
 if __name__ == "__main__":
