@@ -39,33 +39,34 @@ T_BASE_CAM[:3, :3] = R
 T_BASE_CAM[:3,  3] = t
 # ──────────────────────────────────────────────────────────────
 
+def det_cuadrado(frame):
 
-def detectar_figura(frame):
     gray    = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     edges   = cv2.Canny(blurred, 50, 150)
+
     contornos, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    mejor = None
+    mayor_area = 0
 
-    mejor, mayor_area = None, 0
-
-    for cnt in contornos:
-        area = cv2.contourArea(cnt)
+    for contorno in contornos:
+        area = cv2.contourArea(contorno)
         if area < 1000:
             continue
 
-        peri   = cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
+        perimetro = cv2.arcLength(contorno, True)
+        approx    = cv2.approxPolyDP(contorno, 0.04 * perimetro, True)
         x, y, w, h = cv2.boundingRect(approx)
-        nv = len(approx)
 
         figura = ""
-        if nv == 3:
-            figura = "Triangulo"
-        elif nv == 4:
-            figura = "Cuadrado" if 0.85 <= float(w) / h <= 1.15 else "Rectangulo"
-        else:
-            if (4 * np.pi * area) / (peri ** 2) > 0.75:
-                figura = "Circulo"
+        color  = (0, 255, 0)
+        num_vertices = len(approx)
+
+        if num_vertices == 4:
+            aspect_ratio = float(w) / h
+            figura = "Cuadrado" if 0.85 <= aspect_ratio <= 1.15 else "Rectangulo"
+            color  = (0, 0, 255)
+
 
         if figura and area > mayor_area:
             mayor_area = area
@@ -73,9 +74,92 @@ def detectar_figura(frame):
                 "figura":   figura,
                 "cx":       x + w // 2,
                 "cy":       y + h // 2,   # ← fix: era w // 2
-                "contorno": approx
+                "contorno": approx,
+                "color": color
             }
+    return mejor
 
+def det_triangulo(frame):
+    
+    gray    = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edges   = cv2.Canny(blurred, 50, 150)
+
+
+    contornos, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    mejor = None
+    mayor_area = 0
+
+    for contorno in contornos:
+        area = cv2.contourArea(contorno)
+        if area < 1000:
+            continue
+
+        perimetro = cv2.arcLength(contorno, True)
+        approx    = cv2.approxPolyDP(contorno, 0.04 * perimetro, True)
+        x, y, w, h = cv2.boundingRect(approx)
+        
+
+        figura = ""
+        color  = (0, 255, 0)
+        num_vertices = len(approx)
+
+        if num_vertices == 3:
+            figura = "Triangulo"
+            color  = (0, 255, 255)
+
+
+        if figura and area > mayor_area:
+            mayor_area = area
+            mejor = {
+                "figura":   figura,
+                "cx":       x + w // 2,
+                "cy":       y + h // 2, 
+                "contorno": approx,
+                "color": color
+            }
+    return mejor
+
+
+def det_circulo(frame):
+    gray    = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edges   = cv2.Canny(blurred, 50, 150)
+    
+
+    contornos, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    mejor = None
+    mayor_area = 0
+
+    for contorno in contornos:
+        area = cv2.contourArea(contorno)
+        if area < 1000:
+            continue
+
+        perimetro = cv2.arcLength(contorno, True)
+        approx    = cv2.approxPolyDP(contorno, 0.04 * perimetro, True)
+        x, y, w, h = cv2.boundingRect(approx)
+        
+
+        figura = ""
+        color  = (0, 255, 0)
+        num_vertices = len(approx)
+
+        circularidad = (4 * np.pi * area) / (perimetro ** 2)
+        if circularidad > 0.75:
+            figura = "Circulo"
+            color  = (255, 0, 0)
+
+
+        if figura and area > mayor_area:
+            mayor_area = area
+            mejor = {
+                "figura":   figura,
+                "cx":       x + w // 2,
+                "cy":       y + h // 2, 
+                "contorno": approx,
+                "color": color
+            }
     return mejor
 
 
@@ -98,7 +182,13 @@ arm.set_state(0)
 
 # ── Abrir cámara ──────────────────────────────────────────────
 cap = cv2.VideoCapture(cam_url)
-print("'s' = enviar robot a figura  |  'q' = salir")
+
+SECUENCIA = [det_triangulo, det_cuadrado, det_circulo]
+NOMBRES   = ["Triangulo",   "Cuadrado",   "Circulo"]
+modo_auto           = True
+idx_secuencia       = 0
+frames_confirmacion = 0
+FRAMES_REQUERIDOS   = 5
 
 while True:
     ret, frame = cap.read()
@@ -106,42 +196,45 @@ while True:
         print("Sin señal de cámara")
         break
 
-    #frame = cv2.flip(frame, 1)
-    det   = detectar_figura(frame)
+    # Solo llamar la función que toca
+    det = None
+    if idx_secuencia < len(SECUENCIA):
+        det = SECUENCIA[idx_secuencia](frame)
 
     if det:
-        cx, cy = det["cx"], det["cy"]
-        cv2.drawContours(frame, [det["contorno"]], -1, (0, 255, 0), 2)
-        cv2.circle(frame, (cx, cy), 6, (0, 0, 255), -1)
-        cv2.putText(frame, det["figura"], (cx - 40, cy - 12),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        pos = pixel_a_robot(cx, cy)
-        cv2.putText(frame, f"Robot: ({pos[0]:.0f}, {pos[1]:.0f}) mm", (10, 28),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (220, 220, 0), 2)
+        cv2.drawContours(frame, [det["contorno"]], -1, det["color"], 2)
+        cv2.circle(frame, (det["cx"], det["cy"]), 6, (255, 255, 255), -1)
+        cv2.putText(frame, det["figura"], (det["cx"] - 40, det["cy"] - 12),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, det["color"], 2)
+        frames_confirmacion += 1
+    else:
+        frames_confirmacion = 0
 
-    # imshow y waitKey siempre fuera del if
+    # Estado
+    if idx_secuencia < len(SECUENCIA):
+        cv2.putText(frame, f"Buscando: {NOMBRES[idx_secuencia]} ({idx_secuencia+1}/{len(SECUENCIA)})",
+                    (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    else:
+        cv2.putText(frame, "Secuencia completa!", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
     cv2.imshow("Vision Robot", frame)
     key = cv2.waitKey(1) & 0xFF
 
-    if key == ord('s') and det:
+    # Mover cuando hay suficientes frames confirmados
+    if frames_confirmacion >= FRAMES_REQUERIDOS and idx_secuencia < len(SECUENCIA):
+        frames_confirmacion = 0
         pos = pixel_a_robot(det["cx"], det["cy"])
-        code, current = arm.get_position()
-        x_act, y_act, z_act, roll, pitch, yaw = current
-        print(f"\n--- DEBUG ---")
-        print(f"  Figura       : {det['figura']}")
-        print(f"  Pixel        : cx={det['cx']}  cy={det['cy']}")
-        print(f"  Pos actual   : x={x_act:.1f}  y={y_act:.1f}  z={z_act:.1f}")
-        print(f"  Pos calculada: x={pos[0]:.1f}  y={pos[1]:.1f}  z={pos[2]:.1f}")
-        print(f"  Moverá z a   : {z_trabajo}")
-        print(f"-------------")
-        confirm = input("¿Mover? (s/n): ").strip().lower()
-        if confirm == 's':
-            arm.set_position(x=pos[0], y=pos[1], z=z_trabajo,
-                             roll=roll, pitch=pitch, yaw=yaw,
-                             speed=speed, mvacc=mvacc, wait=True)
-            print("Listo.")
+        _, current = arm.get_position()
+        _, _, _, roll, pitch, yaw = current
+        print(f"\n→ Moviendo a {NOMBRES[idx_secuencia]}: x={pos[0]:.1f}, y={pos[1]:.1f}")
+        arm.set_position(x=pos[0], y=pos[1], z=z_trabajo,
+                         roll=roll, pitch=pitch, yaw=yaw,
+                         speed=speed, mvacc=mvacc, wait=True)
+        print(f"  Listo.")
+        idx_secuencia += 1
 
-    elif key == ord('q'):
+    if key == ord('q'):
         break
 
 cap.release()
